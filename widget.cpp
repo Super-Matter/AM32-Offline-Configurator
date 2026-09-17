@@ -33,7 +33,7 @@ Widget::Widget(QWidget *parent)
   ui->setupUi(this);
   // ui->tabWidget->removeTab(4); // todo make these visible
   ui->tabWidget->removeTab(5);  // remove led tab for now
-  this->setWindowTitle("ESC Config Tool 1.96 - For firmware version 2.21 and higher");
+  this->setWindowTitle("ESC Config Tool 1.97 - For firmware version 2.21 and higher");
 
   serialInfoStuff();
 
@@ -371,7 +371,7 @@ void Widget::connectSerial() {
   if (ui->checkBox_2->isChecked()) {
     four_way->direct = true;
     m_serial->setBaudRate(m_serial->Baud19200);
-    if (ui->tabWidget->count() == 4) {
+    if (ui->tabWidget->count() == 5) {
       ui->tabWidget->removeTab(2);
       showSingleMotor(true);
     }
@@ -467,16 +467,26 @@ void Widget::readInitData() {
         four_way->memory_divider_required_four = true;
         four_way->eeprom_address =
             0x7e00;  // this equals an eeprom address of 0x1f800 126kb
+        four_way->firmware_start = 4096;
       }
       if (data[4] == (char)0x1f) {
         qInfo("F0ESC_1KB_PAGE");
         four_way->memory_divider_required_four = false;
         four_way->eeprom_address = 0x7c00;  //  eeprom address of 0x7c00 31kb
+        four_way->firmware_start = 4096;
       }
       if (data[4] == (char)0x35) {
         qInfo("F3ESC_2KB_PAGE");
         four_way->memory_divider_required_four = false;
         four_way->eeprom_address = 0xF800;  // eeprom address of 0xf800 62kb
+        four_way->firmware_start = 4096;
+      }
+      if (data[4] == (char)0x15) {
+        qInfo("NXP ESC_8KB_PAGE");
+        four_way->memory_divider_required_four = false;
+        four_way->eeprom_address =
+            0xE000;  // eeprom address of 64k-8k
+        four_way->firmware_start = 16384;
       }
       ui->escStatusLabel->setText("Connected");
       four_way->ESC_connected = true;
@@ -1368,6 +1378,10 @@ void Widget::showSingleMotor(bool tf) {
   ui->initMotor2_3->setHidden(tf);
   ui->initMotor3_3->setHidden(tf);
   ui->initMotor4_3->setHidden(tf);
+
+  ui->initMotor2_4->setHidden(tf);
+  ui->initMotor3_4->setHidden(tf);
+  ui->initMotor4_4->setHidden(tf);
 }
 
 void Widget::on_initMotor1_clicked() {
