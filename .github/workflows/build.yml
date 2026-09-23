@@ -4,6 +4,7 @@ name: Build SerialPortConnector
 'on':
   push:
     branches: [main, master]
+    tags: ['v*']
   pull_request:
     branches: [main, master]
   workflow_dispatch:
@@ -170,7 +171,7 @@ jobs:
           name: SerialPortConnector-Linux
           path: SerialPortConnector*.AppImage
 
-  build-macos:
+  build-macos-arm64:
     runs-on: macos-15
 
     steps:
@@ -188,31 +189,107 @@ jobs:
 
       - name: Build arm64 app
         run: |
-          mkdir build && cd build
+          mkdir build-arm64 && cd build-arm64
           qmake ../SerialPortConnector.pro CONFIG+=release \
             QMAKE_APPLE_DEVICE_ARCHS=arm64 \
             'QMAKE_CXXFLAGS+=-include arm_acle.h'
           make -j$(sysctl -n hw.ncpu)
+          plist=SerialPortConnector.app/Contents/Info.plist
           /usr/libexec/PlistBuddy \
-            -c 'Set :CFBundleIconFile am32-app-icon.icns' \
-            SerialPortConnector.app/Contents/Info.plist
+            -c 'Set :CFBundleIconFile am32-app-icon.icns' "$plist"
+          /usr/libexec/PlistBuddy \
+            -c 'Add :CFBundleShortVersionString string 1.98' "$plist"
+          /usr/libexec/PlistBuddy \
+            -c 'Add :CFBundleVersion string 1.98' "$plist"
           lipo SerialPortConnector.app/Contents/MacOS/SerialPortConnector \
             -verify_arch arm64
 
       - name: Deploy
         run: |
-          cd build
+          cd build-arm64
+          macdeployqt SerialPortConnector.app
+          codesign --force --deep --sign - SerialPortConnector.app
+          codesign --verify --deep --strict SerialPortConnector.app
           macdeployqt SerialPortConnector.app -dmg
-          mv SerialPortConnector.dmg ../SerialPortConnector-macOS.dmg
+          mv SerialPortConnector.dmg ../SerialPortConnector-macOS-arm64.dmg
 
-      - name: Upload macOS artifact
+      - name: Upload arm64 artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SerialPortConnector-macOS
-          path: SerialPortConnector-macOS.dmg
+          name: SerialPortConnector-macOS-arm64
+          path: SerialPortConnector-macOS-arm64.dmg
+
+  build-macos-universal:
+    runs-on: macos-15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.10.3'
+          host: 'mac'
+          target: 'desktop'
+          arch: 'clang_64'
+          modules: 'qtserialport'
+          cache: true
+
+      - name: Build universal app
+        run: |
+          mkdir build-arm64 build-x86_64
+          cd build-arm64
+          qmake ../../SerialPortConnector.pro CONFIG+=release \
+            QMAKE_APPLE_DEVICE_ARCHS=arm64 \
+            'QMAKE_CXXFLAGS+=-include arm_acle.h'
+          make -j$(sysctl -n hw.ncpu)
+          cd ../build-x86_64
+          qmake ../../SerialPortConnector.pro CONFIG+=release \
+            QMAKE_APPLE_DEVICE_ARCHS=x86_64
+          make -j$(sysctl -n hw.ncpu)
+          cd ..
+          arm_app=build-arm64/SerialPortConnector.app
+          x86_app=build-x86_64/SerialPortConnector.app
+          universal_app=build-universal/SerialPortConnector.app
+          plist=$arm_app/Contents/Info.plist
+          /usr/libexec/PlistBuddy \
+            -c 'Set :CFBundleIconFile am32-app-icon.icns' "$plist"
+          /usr/libexec/PlistBuddy \
+            -c 'Add :CFBundleShortVersionString string 1.98' "$plist"
+          /usr/libexec/PlistBuddy \
+            -c 'Add :CFBundleVersion string 1.98' "$plist"
+          mkdir build-universal
+          ditto "$arm_app" "$universal_app"
+          lipo -create \
+            "$arm_app/Contents/MacOS/SerialPortConnector" \
+            "$x86_app/Contents/MacOS/SerialPortConnector" \
+            -output "$universal_app/Contents/MacOS/SerialPortConnector.new"
+          mv "$universal_app/Contents/MacOS/SerialPortConnector.new" \
+            "$universal_app/Contents/MacOS/SerialPortConnector"
+          lipo "$universal_app/Contents/MacOS/SerialPortConnector" \
+            -verify_arch arm64 x86_64
+
+      - name: Deploy
+        run: |
+          cd build-universal
+          macdeployqt SerialPortConnector.app
+          codesign --force --deep --sign - SerialPortConnector.app
+          codesign --verify --deep --strict SerialPortConnector.app
+          macdeployqt SerialPortConnector.app -dmg
+          mv SerialPortConnector.dmg ../SerialPortConnector-macOS-universal.dmg
+
+      - name: Upload universal artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SerialPortConnector-macOS-universal
+          path: SerialPortConnector-macOS-universal.dmg
 
   create-release:
-    needs: [build-windows, build-linux, build-macos]
+    needs:
+      - build-windows
+      - build-linux
+      - build-macos-arm64
+      - build-macos-universal
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
     permissions:
@@ -230,9 +307,12 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
+          name: AM32 Offline Configurator ${{ github.ref_name }}
+          generate_release_notes: true
           files: |
             SerialPortConnector-Windows.zip
             SerialPortConnector-Linux/*.AppImage
-            SerialPortConnector-macOS/*.dmg
+            SerialPortConnector-macOS-arm64/*.dmg
+            SerialPortConnector-macOS-universal/*.dmg
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
