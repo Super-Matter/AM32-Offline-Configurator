@@ -12,6 +12,7 @@
 #include <QFileDialog>
 #include <QLineEdit>
 #include <QMessageBox>
+#include <QPushButton>
 #include <QScrollBar>
 #include <QSlider>
 #include <QtSerialPort/QSerialPort>
@@ -31,6 +32,10 @@ Widget::Widget(QWidget *parent)
       eeprom_buffer(new QByteArray),
       music_buffer(new QByteArray) {
   ui->setupUi(this);
+  auto *refreshPortsButton = new QPushButton(tr("Refresh Ports"), ui->frame);
+  refreshPortsButton->setGeometry(390, 30, 111, 23);
+  connect(refreshPortsButton, &QPushButton::clicked, this,
+          &Widget::on_refreshPortsButton_clicked);
   // ui->tabWidget->removeTab(4); // todo make these visible
   ui->tabWidget->removeTab(5);  // remove led tab for now
   this->setWindowTitle("ESC Config Tool 1.97 - For firmware version 2.21 and higher");
@@ -330,41 +335,42 @@ void Widget::serialInfoStuff() {
     return;
   }
 
-  // qInfo("called serial info");
   const auto infos = QSerialPortInfo::availablePorts();
-  //   qInfo("number of ports : %d ", infos.size());
-
-  if (infos.size() == number_of_ports) {
+  bool portsChanged =
+      ui->serialSelectorBox->count() != infos.size() + 1 ||
+      ui->serialSelectorBox->itemText(0) != tr("Select Port");
+  if (!portsChanged) {
+    for (int i = 0; i < infos.size(); ++i) {
+      if (ui->serialSelectorBox->itemText(i + 1) != infos.at(i).portName()) {
+        portsChanged = true;
+        break;
+      }
+    }
+  }
+  if (!portsChanged) {
     return;
   }
-  number_of_ports = infos.size();
 
+  const QString selectedPort = ui->serialSelectorBox->currentText();
   ui->serialSelectorBox->clear();
-  ui->serialSelectorBox->addItem("Select Port");
-
-  QString s;
-
-  for (const QSerialPortInfo &info :
-       infos) {  // here we should add to drop down menu
-
+  ui->serialSelectorBox->addItem(tr("Select Port"));
+  for (const QSerialPortInfo &info : infos) {
     ui->serialSelectorBox->addItem(info.portName());
-    //  m_serial->setPortName(info.portName());
-    s = s + QObject::tr("Port: ") + info.portName() + "\n" +
-        QObject::tr("Location: ") + info.systemLocation() + "\n" +
-        QObject::tr("Description: ") + info.description() + "\n" +
-        QObject::tr("Manufacturer: ") + info.manufacturer() + "\n" +
-        QObject::tr("Serial number: ") + info.serialNumber() + "\n" +
-        QObject::tr("Vendor Identifier: ") +
-        (info.hasVendorIdentifier()
-             ? QString::number(info.vendorIdentifier(), 16)
-             : QString()) +
-        "\n" + QObject::tr("Product Identifier: ") +
-        (info.hasProductIdentifier()
-             ? QString::number(info.productIdentifier(), 16)
-             : QString()) +
-        "\n";
   }
-  // ui->textEdit->setPlainText(s);
+
+  const int selectedIndex = ui->serialSelectorBox->findText(selectedPort);
+  ui->serialSelectorBox->setCurrentIndex(selectedIndex >= 0 ? selectedIndex : 0);
+}
+
+void Widget::on_refreshPortsButton_clicked() {
+  if (m_serial->isOpen()) {
+    showStatusMessage(tr("Disconnect before refreshing serial ports"));
+    return;
+  }
+
+  serialInfoStuff();
+  const int portCount = ui->serialSelectorBox->count() - 1;
+  showStatusMessage(tr("%1 serial port(s) found").arg(portCount));
 }
 
 void Widget::connectSerial() {

@@ -163,6 +163,8 @@ class Widget : public QWidget {
 
   void serialInfoStuff();
 
+  void on_refreshPortsButton_clicked();
+
   //   void on_serialSelectorBox_activated(const QString &arg1);
 
   //   void on_uploadMusic_clicked();
@@ -276,7 +278,6 @@ class Widget : public QWidget {
 
   uint8_t retries = 0;
   uint8_t max_retries = 16;
-  uint8_t number_of_ports = 0;
 
   //    typedef struct ioMem_s {
   //        uint8_t D_NUM_BYTES;
