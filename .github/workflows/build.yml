@@ -198,9 +198,9 @@ jobs:
           /usr/libexec/PlistBuddy \
             -c 'Set :CFBundleIconFile am32-app-icon.icns' "$plist"
           /usr/libexec/PlistBuddy \
-            -c 'Add :CFBundleShortVersionString string 1.98' "$plist"
+            -c 'Add :CFBundleShortVersionString string 1.99' "$plist"
           /usr/libexec/PlistBuddy \
-            -c 'Add :CFBundleVersion string 1.98' "$plist"
+            -c 'Add :CFBundleVersion string 1.99' "$plist"
           lipo SerialPortConnector.app/Contents/MacOS/SerialPortConnector \
             -verify_arch arm64
 
@@ -255,9 +255,9 @@ jobs:
           /usr/libexec/PlistBuddy \
             -c 'Set :CFBundleIconFile am32-app-icon.icns' "$plist"
           /usr/libexec/PlistBuddy \
-            -c 'Add :CFBundleShortVersionString string 1.98' "$plist"
+            -c 'Add :CFBundleShortVersionString string 1.99' "$plist"
           /usr/libexec/PlistBuddy \
-            -c 'Add :CFBundleVersion string 1.98' "$plist"
+            -c 'Add :CFBundleVersion string 1.99' "$plist"
           mkdir build-universal
           ditto "$arm_app" "$universal_app"
           lipo -create \

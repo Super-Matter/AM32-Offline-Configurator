@@ -1,6 +1,6 @@
 # AM32 Offline Configurator
 
-A Qt Widgets desktop application for configuring and updating AM32 electronic speed controllers (ESCs) without using the web configurator. The current app identifies itself as Config Tool 1.98 and targets AM32 firmware 2.21 and newer.
+A Qt Widgets desktop application for configuring and updating AM32 electronic speed controllers (ESCs) without using the web configurator. The current app identifies itself as Config Tool 1.99 and targets AM32 firmware 2.21 and newer.
 
 ## Fork-specific changes
 
@@ -8,6 +8,7 @@ This is a fork of [am32-firmware/Offline-Configurator](https://github.com/am32-f
 
 - Adds a **Refresh Ports** button and preserves the selected serial port when the detected-port list changes.
 - Uses AM32-branded application icons and larger macOS UI text/scaling defaults.
+- Remembers the last firmware folder and displays a timestamp after successful flashing.
 - Publishes separate Apple Silicon and universal macOS packages.
 
 The AM32 configuration and firmware communication behavior remains based on upstream; this fork does not provide or modify ESC firmware.

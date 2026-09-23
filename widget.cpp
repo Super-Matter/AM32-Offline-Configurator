@@ -8,12 +8,16 @@
 
 #include <QCheckBox>
 #include <QComboBox>
+#include <QDateTime>
+#include <QDir>
 #include <QFile>
 #include <QFileDialog>
+#include <QFileInfo>
 #include <QLineEdit>
 #include <QMessageBox>
 #include <QPushButton>
 #include <QScrollBar>
+#include <QSettings>
 #include <QSlider>
 #include <QtSerialPort/QSerialPort>
 #include <QSerialPortInfo>
@@ -32,13 +36,14 @@ Widget::Widget(QWidget *parent)
       eeprom_buffer(new QByteArray),
       music_buffer(new QByteArray) {
   ui->setupUi(this);
+  ui->escStatusLabel_2->setFixedWidth(380);
   auto *refreshPortsButton = new QPushButton(tr("Refresh Ports"), ui->frame);
   refreshPortsButton->setGeometry(390, 30, 111, 23);
   connect(refreshPortsButton, &QPushButton::clicked, this,
           &Widget::on_refreshPortsButton_clicked);
   // ui->tabWidget->removeTab(4); // todo make these visible
   ui->tabWidget->removeTab(5);  // remove led tab for now
-  this->setWindowTitle("ESC Config Tool 1.98 - For firmware version 2.21 and higher");
+  this->setWindowTitle("ESC Config Tool 1.99 - For firmware version 2.21 and higher");
 
   serialInfoStuff();
 
@@ -319,8 +324,23 @@ void Widget::closeSerialPort() {
 }
 
 void Widget::loadBinFile() {
-  filename = QFileDialog::getOpenFileName(this, tr("Open File"),
-                                          "c:", tr("All Files (*.*)"));
+  QSettings settings("Super-Matter", "AM32-Offline-Configurator");
+  QString lastFirmwareDirectory =
+      settings.value("firmware/lastDirectory", QDir::homePath()).toString();
+  if (lastFirmwareDirectory.isEmpty() ||
+      !QDir(lastFirmwareDirectory).exists()) {
+    lastFirmwareDirectory = QDir::homePath();
+  }
+
+  const QString selectedFirmware = QFileDialog::getOpenFileName(
+      this, tr("Open File"), lastFirmwareDirectory, tr("All Files (*.*)"));
+  if (selectedFirmware.isEmpty()) {
+    return;
+  }
+
+  filename = selectedFirmware;
+  settings.setValue("firmware/lastDirectory",
+                    QFileInfo(filename).absolutePath());
   // ui->textEdit->setPlainText(filename);
   ui->writeBinary->setHidden(false);
   // ui->VerifyFlash->setHidden(false);
@@ -941,7 +961,10 @@ void Widget::on_writeBinary_clicked() {
       ui->progressBar->setValue((index * 100) / sizeofBin);
       QApplication::processEvents();
       if (index >= sizeofBin) {
-        ui->escStatusLabel_2->setText("FLASH SUCCESS");
+        const QString flashTimestamp =
+            QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss");
+        ui->escStatusLabel_2->setText(
+            QString("FLASH SUCCESS - %1").arg(flashTimestamp));
         ui->progressBar->setValue(0);
         four_way->ack_required = true;
 
