@@ -198,9 +198,9 @@ jobs:
           /usr/libexec/PlistBuddy \
             -c 'Set :CFBundleIconFile am32-app-icon.icns' "$plist"
           /usr/libexec/PlistBuddy \
-            -c 'Add :CFBundleShortVersionString string 1.99' "$plist"
+            -c 'Add :CFBundleShortVersionString string 1.97.2' "$plist"
           /usr/libexec/PlistBuddy \
-            -c 'Add :CFBundleVersion string 1.99' "$plist"
+            -c 'Add :CFBundleVersion string 1.97.2' "$plist"
           lipo SerialPortConnector.app/Contents/MacOS/SerialPortConnector \
             -verify_arch arm64
 
@@ -210,7 +210,9 @@ jobs:
           macdeployqt SerialPortConnector.app
           codesign --force --deep --sign - SerialPortConnector.app
           codesign --verify --deep --strict SerialPortConnector.app
-          macdeployqt SerialPortConnector.app -dmg
+          hdiutil create -volname SerialPortConnector \
+            -srcfolder SerialPortConnector.app \
+            -ov -format UDZO SerialPortConnector.dmg
           mv SerialPortConnector.dmg ../SerialPortConnector-macOS-arm64.dmg
 
       - name: Upload arm64 artifact
@@ -255,9 +257,9 @@ jobs:
           /usr/libexec/PlistBuddy \
             -c 'Set :CFBundleIconFile am32-app-icon.icns' "$plist"
           /usr/libexec/PlistBuddy \
-            -c 'Add :CFBundleShortVersionString string 1.99' "$plist"
+            -c 'Add :CFBundleShortVersionString string 1.97.2' "$plist"
           /usr/libexec/PlistBuddy \
-            -c 'Add :CFBundleVersion string 1.99' "$plist"
+            -c 'Add :CFBundleVersion string 1.97.2' "$plist"
           mkdir build-universal
           ditto "$arm_app" "$universal_app"
           lipo -create \
@@ -275,7 +277,9 @@ jobs:
           macdeployqt SerialPortConnector.app
           codesign --force --deep --sign - SerialPortConnector.app
           codesign --verify --deep --strict SerialPortConnector.app
-          macdeployqt SerialPortConnector.app -dmg
+          hdiutil create -volname SerialPortConnector \
+            -srcfolder SerialPortConnector.app \
+            -ov -format UDZO SerialPortConnector.dmg
           mv SerialPortConnector.dmg ../SerialPortConnector-macOS-universal.dmg
 
       - name: Upload universal artifact

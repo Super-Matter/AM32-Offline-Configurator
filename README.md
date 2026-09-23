@@ -1,6 +1,6 @@
 # AM32 Offline Configurator
 
-A Qt Widgets desktop application for configuring and updating AM32 electronic speed controllers (ESCs) without using the web configurator. The current app identifies itself as Config Tool 1.99 and targets AM32 firmware 2.21 and newer.
+A Qt Widgets desktop application for configuring and updating AM32 electronic speed controllers (ESCs) without using the web configurator. The current app identifies itself as Config Tool 1.97.2 and targets AM32 firmware 2.21 and newer.
 
 ## Fork-specific changes
 
